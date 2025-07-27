@@ -1,26 +1,212 @@
-@import "tailwindcss";
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
+/* NextUI Theme Variables */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --nextui-primary: 0 122 255;
+  --nextui-secondary: 0 217 255;
+  --nextui-success: 23 201 100;
+  --nextui-warning: 245 165 36;
+  --nextui-danger: 243 18 96;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+::-webkit-scrollbar-track {
+  @apply bg-content2;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-default-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-default-500;
+}
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus Styles */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-primary;
+}
+
+/* Animation Classes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+/* Gradient Text */
+.gradient-text {
+  @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+}
+
+/* Card Hover Effects */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+/* Button Loading State */
+.btn-loading {
+  @apply pointer-events-none opacity-70;
+}
+
+/* Form Validation States */
+.input-error {
+  @apply border-danger text-danger;
+}
+
+.input-success {
+  @apply border-success text-success;
+}
+
+/* Responsive Typography */
+@layer base {
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl font-bold;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl font-semibold;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl font-semibold;
+  }
+
+  h5 {
+    @apply text-lg md:text-xl font-medium;
+  }
+}
+
+/* Utility Classes */
+.section-padding {
+  @apply py-16 md:py-20 lg:py-24;
+}
+
+.container-padding {
+  @apply px-4 sm:px-6 lg:px-8;
+}
+
+/* Dark Mode Support */
+.dark {
+  --nextui-primary: 0 122 255;
+  --nextui-secondary: 0 217 255;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Loading Skeleton */
+.skeleton {
+  @apply animate-pulse bg-default-200 rounded;
+}
+
+/* Status Indicators */
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-online {
+  @apply bg-success animate-pulse;
+}
+
+.status-offline {
+  @apply bg-default-400;
+}
+
+.status-busy {
+  @apply bg-warning;
+}
+
+/* Custom NextUI Component Overrides */
+.nextui-navbar {
+  backdrop-filter: blur(12px);
+}
+
+.nextui-card {
+  @apply transition-shadow duration-300;
+}
+
+/* Responsive Table Wrapper */
+.table-wrapper {
+  @apply overflow-x-auto -mx-4 sm:mx-0;
+}
+
+.table-wrapper table {
+  @apply min-w-full;
+}
+
+/* Badge Variants */
+.badge-primary {
+  @apply bg-primary/10 text-primary;
+}
+
+.badge-success {
+  @apply bg-success/10 text-success;
+}
+
+.badge-warning {
+  @apply bg-warning/10 text-warning;
+}
+
+.badge-danger {
+  @apply bg-danger/10 text-danger;
 }
