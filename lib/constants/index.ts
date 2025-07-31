@@ -24,7 +24,7 @@ export const ROUTES = {
     RESET_PASSWORD: '/reset-password',
 
     // Private routes
-    DASHBOARD: '/dashboard',
+    DASHBOARD: '/dashboard/tickets',
     TICKETS: '/dashboard/tickets',
     NEW_TICKET: '/dashboard/tickets/new',
     TICKET_DETAIL: (id: string) => `/dashboard/tickets/${id}`,
