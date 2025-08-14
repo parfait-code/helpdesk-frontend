@@ -1,519 +1,372 @@
 "use client";
 
 import React from "react";
+import { Input, Button, Checkbox, Link, Divider } from "@nextui-org/react";
 import {
-  Card,
-  CardBody,
-  Input,
-  Button,
-  Checkbox,
-  Link,
-  Divider,
-  Progress,
-  Chip,
-} from "@nextui-org/react";
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  User,
-  Building,
-  Phone,
-  CheckCircle,
-  AlertCircle,
-  ArrowRight,
-  Shield,
+    User,
+    Mail,
+    Lock,
+    Eye,
+    EyeOff,
+    AlertCircle,
+    Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 
 const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.45 },
 };
 
-interface PasswordStrength {
-  score: number;
-  label: string;
-  color: "danger" | "warning" | "success";
-}
-
 export default function RegisterPage() {
-  const router = useRouter();
-  const [isVisible, setIsVisible] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [acceptTerms, setAcceptTerms] = React.useState(false);
-  const [newsletter, setNewsletter] = React.useState(false);
-  const [error, setError] = React.useState("");
-  const [step, setStep] = React.useState(1); // 1: Info, 2: Password
+    const [isVisible, setIsVisible] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [error, setError] = React.useState("");
 
-  const [formData, setFormData] = React.useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    company: "",
-    password: "",
-    confirmPassword: "",
-  });
+    const [formData, setFormData] = React.useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+    });
 
-  const [validationErrors, setValidationErrors] = React.useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    company: "",
-    password: "",
-    confirmPassword: "",
-  });
+    const [validationErrors, setValidationErrors] = React.useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+    });
 
-  const toggleVisibility = () => setIsVisible(!isVisible);
+    const [acceptTerms, setAcceptTerms] = React.useState(false);
+    const [newsletter, setNewsletter] = React.useState(false);
 
-  // Calcul de la force du mot de passe
-  const calculatePasswordStrength = (password: string): PasswordStrength => {
-    let score = 0;
+    const [passwordCriteria, setPasswordCriteria] = React.useState({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        digit: false,
+    });
+    const [passwordFocused, setPasswordFocused] = React.useState(false);
 
-    if (password.length >= 8) score++;
-    if (password.length >= 12) score++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^a-zA-Z0-9]/.test(password)) score++;
+    const toggleVisibility = () => setIsVisible((v) => !v);
 
-    if (score <= 2) return { score: 33, label: "Faible", color: "danger" };
-    if (score <= 4) return { score: 66, label: "Moyen", color: "warning" };
-    return { score: 100, label: "Fort", color: "success" };
-  };
+    const validateField = (field: string, value: string) => {
+        let message = "";
+        if (field === "firstName" || field === "lastName") {
+            if (!value.trim()) message = "Ce champ est requis";
+        }
+        if (field === "email") {
+            if (!value) message = "L'email est requis";
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+                message = "Email invalide";
+        }
+        if (field === "password") {
+            if (!value) message = "Le mot de passe est requis";
+            else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(value))
+                message =
+                    "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et 8 caractères";
 
-  const passwordStrength = React.useMemo(
-    () => calculatePasswordStrength(formData.password),
-    [formData.password]
-  );
-
-  const validateStep1 = () => {
-    const errors = {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      company: "",
-      password: "",
-      confirmPassword: "",
+            setPasswordCriteria({
+                length: value.length >= 8,
+                uppercase: /[A-Z]/.test(value),
+                lowercase: /[a-z]/.test(value),
+                digit: /\d/.test(value),
+            });
+        }
+        if (field === "confirmPassword") {
+            if (value !== formData.password)
+                message = "Les mots de passe ne correspondent pas";
+        }
+        setValidationErrors((prev) => ({ ...prev, [field]: message }));
+        return message === "";
     };
 
-    if (!formData.firstName) errors.firstName = "Le prénom est requis";
-    if (!formData.lastName) errors.lastName = "Le nom est requis";
+    const validateForm = () => {
+        const fields = [
+            "firstName",
+            "lastName",
+            "email",
+            "password",
+            "confirmPassword",
+        ];
+        let ok = true;
+        for (const f of fields) {
+            const valid = validateField(
+                f,
+                (formData as Record<string, string>)[f] || ""
+            );
+            if (!valid) ok = false;
+        }
+        if (!acceptTerms) {
+            setError("Vous devez accepter les conditions");
+            ok = false;
+        } else setError("");
+        return ok;
+    };
 
-    if (!formData.email) {
-      errors.email = "L'email est requis";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = "Email invalide";
-    }
+    const handleSubmit = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (!validateForm()) return;
+        setIsLoading(true);
+        setError("");
+        try {
+            await new Promise((r) => setTimeout(r, 900));
+            // success placeholder
+        } catch (err: unknown) {
+            const msg =
+                err instanceof Error
+                    ? err.message
+                    : String(err || "Erreur lors de l'inscription");
+            setError(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    if (
-      formData.phone &&
-      !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{3,6}$/.test(
-        formData.phone
-      )
-    ) {
-      errors.phone = "Numéro de téléphone invalide";
-    }
+    const handleInputChange = (field: string, value: string) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        validateField(field, value);
+        if (error) setError("");
+    };
 
-    setValidationErrors(errors);
+    const passwordRequirements = [
+        { text: "Au moins 8 caractères", met: passwordCriteria.length },
+        {
+            text: "Au moins une majuscule (A-Z)",
+            met: passwordCriteria.uppercase,
+        },
+        {
+            text: "Au moins une minuscule (a-z)",
+            met: passwordCriteria.lowercase,
+        },
+        { text: "Au moins un chiffre (0-9)", met: passwordCriteria.digit },
+    ];
+
     return (
-      !errors.firstName && !errors.lastName && !errors.email && !errors.phone
-    );
-  };
+        <motion.div
+            initial="initial"
+            animate="animate"
+            variants={fadeIn}
+            className="max-w-xl mx-auto p-2"
+        >
+            <div className="space-y-6">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold">Créer un compte</h2>
+                    <p className="text-default-600 mt-2">
+                        Inscrivez-vous pour accéder à HelpDesk
+                    </p>
+                </div>
 
-  const validateStep2 = () => {
-    const errors = { ...validationErrors };
-
-    if (!formData.password) {
-      errors.password = "Le mot de passe est requis";
-    } else if (formData.password.length < 8) {
-      errors.password = "Le mot de passe doit contenir au moins 8 caractères";
-    } else if (passwordStrength.score < 66) {
-      errors.password = "Le mot de passe est trop faible";
-    }
-
-    if (!formData.confirmPassword) {
-      errors.confirmPassword = "Veuillez confirmer le mot de passe";
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = "Les mots de passe ne correspondent pas";
-    }
-
-    setValidationErrors(errors);
-    return !errors.password && !errors.confirmPassword;
-  };
-
-  const handleNextStep = () => {
-    if (validateStep1()) {
-      setStep(2);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!validateStep2()) {
-      return;
-    }
-
-    if (!acceptTerms) {
-      setError("Vous devez accepter les conditions d'utilisation");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Simulation de l'appel API
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      console.log("Inscription avec:", formData);
-
-      // Redirection vers la page de connexion avec message de succès
-      router.push("/login?registered=true");
-    } catch (err) {
-      setError("Une erreur est survenue lors de l'inscription");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear validation error when user starts typing
-    if (validationErrors[field as keyof typeof validationErrors]) {
-      setValidationErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-    // Clear general error
-    if (error) setError("");
-  };
-
-  const passwordRequirements = [
-    { met: formData.password.length >= 8, text: "Au moins 8 caractères" },
-    {
-      met: /[a-z]/.test(formData.password) && /[A-Z]/.test(formData.password),
-      text: "Majuscules et minuscules",
-    },
-    { met: /[0-9]/.test(formData.password), text: "Au moins un chiffre" },
-    {
-      met: /[^a-zA-Z0-9]/.test(formData.password),
-      text: "Au moins un caractère spécial",
-    },
-  ];
-
-  return (
-    <motion.div initial="initial" animate="animate" variants={fadeIn}>
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">Créez votre compte</h2>
-          <p className="text-default-600 mt-2">
-            Commencez à utiliser HelpDesk Pro gratuitement
-          </p>
-        </div>
-
-        {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold ${
-                step >= 1 ? "bg-primary" : "bg-default-300"
-              }`}
-            >
-              1
-            </div>
-            <span className="text-sm font-medium hidden sm:inline">
-              Informations
-            </span>
-          </div>
-          <div
-            className={`w-16 h-0.5 ${
-              step >= 2 ? "bg-primary" : "bg-default-300"
-            }`}
-          />
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold ${
-                step >= 2 ? "bg-primary" : "bg-default-300"
-              }`}
-            >
-              2
-            </div>
-            <span className="text-sm font-medium hidden sm:inline">
-              Sécurité
-            </span>
-          </div>
-        </div>
-
-        {/* Error Alert */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-danger/10 border border-danger/20 rounded-lg p-4"
-          >
-            <div className="flex items-center gap-2 text-danger">
-              <AlertCircle className="w-5 h-5" />
-              <span className="text-sm">{error}</span>
-            </div>
-          </motion.div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {step === 1 ? (
-            <>
-              {/* Step 1: Basic Information */}
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Prénom"
-                  placeholder="Jean"
-                  variant="bordered"
-                  value={formData.firstName}
-                  onValueChange={(value) =>
-                    handleInputChange("firstName", value)
-                  }
-                  isInvalid={!!validationErrors.firstName}
-                  errorMessage={validationErrors.firstName}
-                  startContent={<User className="w-4 h-4 text-default-400" />}
-                />
-                <Input
-                  label="Nom"
-                  placeholder="Dupont"
-                  variant="bordered"
-                  value={formData.lastName}
-                  onValueChange={(value) =>
-                    handleInputChange("lastName", value)
-                  }
-                  isInvalid={!!validationErrors.lastName}
-                  errorMessage={validationErrors.lastName}
-                />
-              </div>
-
-              <Input
-                label="Email professionnel"
-                placeholder="vous@entreprise.com"
-                type="email"
-                variant="bordered"
-                value={formData.email}
-                onValueChange={(value) => handleInputChange("email", value)}
-                isInvalid={!!validationErrors.email}
-                errorMessage={validationErrors.email}
-                startContent={<Mail className="w-4 h-4 text-default-400" />}
-              />
-
-              <Input
-                label="Téléphone (optionnel)"
-                placeholder="+237 6XX XXX XXX"
-                type="tel"
-                variant="bordered"
-                value={formData.phone}
-                onValueChange={(value) => handleInputChange("phone", value)}
-                isInvalid={!!validationErrors.phone}
-                errorMessage={validationErrors.phone}
-                startContent={<Phone className="w-4 h-4 text-default-400" />}
-              />
-
-              <Input
-                label="Entreprise (optionnel)"
-                placeholder="Nom de votre entreprise"
-                variant="bordered"
-                value={formData.company}
-                onValueChange={(value) => handleInputChange("company", value)}
-                startContent={<Building className="w-4 h-4 text-default-400" />}
-              />
-
-              <Button
-                color="primary"
-                className="w-full font-semibold"
-                size="lg"
-                onClick={handleNextStep}
-                endContent={<ArrowRight className="w-5 h-5" />}
-              >
-                Continuer
-              </Button>
-            </>
-          ) : (
-            <>
-              {/* Step 2: Password */}
-              <div className="space-y-4">
-                <Input
-                  label="Mot de passe"
-                  placeholder="Créez un mot de passe sécurisé"
-                  variant="bordered"
-                  value={formData.password}
-                  onValueChange={(value) =>
-                    handleInputChange("password", value)
-                  }
-                  isInvalid={!!validationErrors.password}
-                  errorMessage={validationErrors.password}
-                  endContent={
-                    <button
-                      className="focus:outline-none"
-                      type="button"
-                      onClick={toggleVisibility}
-                      aria-label={
-                        isVisible
-                          ? "Masquer le mot de passe"
-                          : "Afficher le mot de passe"
-                      }
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-danger/10 border border-danger/20 rounded-lg p-4"
                     >
-                      {isVisible ? (
-                        <EyeOff className="w-4 h-4 text-default-400" />
-                      ) : (
-                        <Eye className="w-4 h-4 text-default-400" />
-                      )}
-                    </button>
-                  }
-                  type={isVisible ? "text" : "password"}
-                  startContent={<Lock className="w-4 h-4 text-default-400" />}
-                />
-
-                {formData.password && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-default-600">
-                        Force du mot de passe
-                      </span>
-                      <Chip
-                        size="sm"
-                        color={passwordStrength.color}
-                        variant="flat"
-                      >
-                        {passwordStrength.label}
-                      </Chip>
-                    </div>
-                    <Progress
-                      value={passwordStrength.score}
-                      color={passwordStrength.color}
-                      size="sm"
-                    />
-                    <div className="space-y-1 mt-2">
-                      {passwordRequirements.map((req, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <CheckCircle
-                            className={`w-4 h-4 ${
-                              req.met ? "text-success" : "text-default-300"
-                            }`}
-                          />
-                          <span
-                            className={
-                              req.met ? "text-default-700" : "text-default-500"
-                            }
-                          >
-                            {req.text}
-                          </span>
+                        <div className="flex items-center gap-2 text-danger">
+                            <AlertCircle className="w-5 h-5" />
+                            <span className="text-sm">{error}</span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                    </motion.div>
                 )}
 
-                <Input
-                  label="Confirmer le mot de passe"
-                  placeholder="Confirmez votre mot de passe"
-                  variant="bordered"
-                  value={formData.confirmPassword}
-                  onValueChange={(value) =>
-                    handleInputChange("confirmPassword", value)
-                  }
-                  isInvalid={!!validationErrors.confirmPassword}
-                  errorMessage={validationErrors.confirmPassword}
-                  type={isVisible ? "text" : "password"}
-                  startContent={<Shield className="w-4 h-4 text-default-400" />}
-                />
-              </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-default-700">Prénom</label>
+                            <Input
+                                placeholder="Jean"
+                                className="!border-[1px] !border-default-300 rounded-xl focus-within:!border-primary"
+                                value={formData.firstName}
+                                onValueChange={(v) =>
+                                    handleInputChange("firstName", v)
+                                }
+                                isInvalid={!!validationErrors.firstName}
+                                startContent={
+                                    <User className="w-4 h-4 text-default-400" />
+                                }
+                                classNames={{ input: "text-default-800" }}
+                            />
+                            {validationErrors.firstName && (
+                                <p className="text-danger text-sm mt-1">
+                                    {validationErrors.firstName}
+                                </p>
+                            )}
+                        </div>
 
-              <div className="space-y-3">
-                <Checkbox
-                  size="sm"
-                  isSelected={acceptTerms}
-                  onValueChange={setAcceptTerms}
-                  classNames={{
-                    label: "text-sm text-default-600",
-                  }}
-                >
-                  J&apos;accepte les{" "}
-                  <Link href="/terms" size="sm" className="underline">
-                    conditions d&apos;utilisation
-                  </Link>{" "}
-                  et la{" "}
-                  <Link href="/privacy" size="sm" className="underline">
-                    politique de confidentialité
-                  </Link>
-                </Checkbox>
+                        <div className="space-y-1">
+                            <label className="text-default-700">Nom</label>
+                            <Input
+                                placeholder="Dupont"
+                                className="!border-[1px] !border-default-300 rounded-xl focus-within:!border-primary"
+                                value={formData.lastName}
+                                onValueChange={(v) =>
+                                    handleInputChange("lastName", v)
+                                }
+                                isInvalid={!!validationErrors.lastName}
+                                classNames={{ input: "text-default-800" }}
+                            />
+                            {validationErrors.lastName && (
+                                <p className="text-danger text-sm mt-1">
+                                    {validationErrors.lastName}
+                                </p>
+                            )}
+                        </div>
+                    </div>
 
-                <Checkbox
-                  size="sm"
-                  isSelected={newsletter}
-                  onValueChange={setNewsletter}
-                  classNames={{
-                    label: "text-sm text-default-600",
-                  }}
-                >
-                  Je souhaite recevoir des actualités et offres par email
-                </Checkbox>
-              </div>
+                    <div className="space-y-1">
+                        <label className="text-default-700">Email</label>
+                        <Input
+                            placeholder="vous@entreprise.com"
+                            type="email"
+                            className="!border-[1px] !border-default-300 rounded-xl focus-within:!border-primary"
+                            value={formData.email}
+                            onValueChange={(v) => handleInputChange("email", v)}
+                            isInvalid={!!validationErrors.email}
+                            startContent={
+                                <Mail className="w-4 h-4 text-default-400" />
+                            }
+                            classNames={{ input: "text-default-800" }}
+                        />
+                        {validationErrors.email && (
+                            <p className="text-danger text-sm mt-1">
+                                {validationErrors.email}
+                            </p>
+                        )}
+                    </div>
 
-              <div className="flex gap-4">
-                <Button
-                  variant="flat"
-                  className="font-semibold"
-                  size="lg"
-                  onClick={() => setStep(1)}
-                >
-                  Retour
-                </Button>
-                <Button
-                  type="submit"
-                  color="primary"
-                  className="flex-1 font-semibold"
-                  size="lg"
-                  isLoading={isLoading}
-                  isDisabled={!acceptTerms}
-                  endContent={!isLoading && <CheckCircle className="w-5 h-5" />}
-                >
-                  {isLoading ? "Création..." : "Créer mon compte"}
-                </Button>
-              </div>
-            </>
-          )}
-        </form>
+                    <div className="space-y-1">
+                        <label className="text-default-700">Mot de passe</label>
+                        <Input
+                            placeholder="Créez un mot de passe sécurisé"
+                            className="!border-[1px] !border-default-300 rounded-xl focus-within:!border-primary"
+                            value={formData.password}
+                            onValueChange={(v) =>
+                                handleInputChange("password", v)
+                            }
+                            onFocus={() => setPasswordFocused(true)}
+                            onBlur={() => setPasswordFocused(false)}
+                            isInvalid={!!validationErrors.password}
+                            endContent={
+                                <button
+                                    className="focus:outline-none"
+                                    type="button"
+                                    onClick={toggleVisibility}
+                                    aria-label={
+                                        isVisible
+                                            ? "Masquer le mot de passe"
+                                            : "Afficher le mot de passe"
+                                    }
+                                >
+                                    {isVisible ? (
+                                        <EyeOff className="w-4 h-4 text-default-400" />
+                                    ) : (
+                                        <Eye className="w-4 h-4 text-default-400" />
+                                    )}
+                                </button>
+                            }
+                            type={isVisible ? "text" : "password"}
+                            startContent={
+                                <Lock className="w-4 h-4 text-default-400" />
+                            }
+                            classNames={{ input: "text-default-800" }}
+                        />
+                        {validationErrors.password && (
+                            <p className="text-danger text-sm mt-1">
+                                {validationErrors.password}
+                            </p>
+                        )}
 
-        {step === 1 && (
-          <>
-            <div className="relative">
-              <Divider />
-              <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-content1 px-4 text-sm text-default-500">
-                OU
-              </span>
+                        {passwordFocused && (
+                            <motion.ul
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mt-2 space-y-1 text-sm"
+                            >
+                                {passwordRequirements.map((req, idx) => (
+                                    <li
+                                        key={idx}
+                                        className={`flex items-center gap-2 ${
+                                            req.met
+                                                ? "text-green-600"
+                                                : "text-default-500"
+                                        }`}
+                                    >
+                                        <Check className="w-4 h-4" />
+                                        <span>{req.text}</span>
+                                    </li>
+                                ))}
+                            </motion.ul>
+                        )}
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-default-700">
+                            Confirmer le mot de passe
+                        </label>
+                        <Input
+                            placeholder="Confirmez le mot de passe"
+                            className="!border-[1px] !border-default-300 rounded-xl focus-within:!border-primary"
+                            value={formData.confirmPassword}
+                            onValueChange={(v) =>
+                                handleInputChange("confirmPassword", v)
+                            }
+                            isInvalid={!!validationErrors.confirmPassword}
+                            startContent={
+                                <Lock className="w-4 h-4 text-default-400" />
+                            }
+                            classNames={{ input: "text-default-800" }}
+                        />
+                        {validationErrors.confirmPassword && (
+                            <p className="text-danger text-sm mt-1">
+                                {validationErrors.confirmPassword}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Checkbox
+                            isSelected={acceptTerms}
+                            onChange={(s) => setAcceptTerms(!!s)}
+                        />
+                        <p className="text-sm">
+                            J&apos;accepte les <Link>conditions</Link>
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Checkbox
+                            isSelected={newsletter}
+                            onChange={(s) => setNewsletter(!!s)}
+                        />
+                        <p className="text-sm">
+                            S&apos;inscrire &agrave; la newsletter
+                        </p>
+                    </div>
+
+                    <div className="pt-2">
+                        <Button
+                            isDisabled={isLoading}
+                            type="submit"
+                            color="primary"
+                            onClick={handleSubmit}
+                            className="w-full"
+                        >
+                            {isLoading ? "Création..." : "Créer mon compte"}
+                        </Button>
+                    </div>
+
+                    <Divider />
+
+                    <p className="text-sm text-center">
+                        Vous avez déjà un compte ?{" "}
+                        <Link href="/login">Se connecter</Link>
+                    </p>
+                </form>
             </div>
-
-            <div className="text-center space-y-4">
-              <p className="text-sm text-default-600">
-                Déjà un compte ?{" "}
-                <Link href="/login" className="text-primary font-medium">
-                  Connectez-vous
-                </Link>
-              </p>
-
-              <Link
-                href="/"
-                size="sm"
-                className="text-default-500 inline-flex items-center gap-1"
-              >
-                ← Retour à l&apos;accueil
-              </Link>
-            </div>
-          </>
-        )}
-      </div>
-    </motion.div>
-  );
+        </motion.div>
+    );
 }

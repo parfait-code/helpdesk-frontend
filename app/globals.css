@@ -102,6 +102,14 @@ html {
 
 /* Responsive Typography */
 @layer base {
+    body {
+        @apply text-default-900;
+    }
+
+    /* Dark mode: use a lighter default for contrast */
+    .dark body {
+        @apply text-default-200;
+    }
     h1 {
         @apply text-4xl md:text-5xl lg:text-6xl font-bold;
     }
