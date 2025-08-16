@@ -12,6 +12,7 @@ import {
     Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth, useAuthValidation } from "@/lib/utils/hooks/use-auth";
 
 const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -20,9 +21,16 @@ const fadeIn = {
 };
 
 export default function RegisterPage() {
+    const { register, isLoading, error, clearError } = useAuth();
+    const {
+        validateEmail,
+        validatePassword,
+        validateName,
+        validateConfirmPassword,
+        getPasswordCriteria,
+    } = useAuthValidation();
+
     const [isVisible, setIsVisible] = React.useState(false);
-    const [isLoading, setIsLoading] = React.useState(false);
-    const [error, setError] = React.useState("");
 
     const [formData, setFormData] = React.useState({
         firstName: "",
@@ -55,31 +63,20 @@ export default function RegisterPage() {
 
     const validateField = (field: string, value: string) => {
         let message = "";
-        if (field === "firstName" || field === "lastName") {
-            if (!value.trim()) message = "Ce champ est requis";
-        }
-        if (field === "email") {
-            if (!value) message = "L'email est requis";
-            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-                message = "Email invalide";
-        }
-        if (field === "password") {
-            if (!value) message = "Le mot de passe est requis";
-            else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(value))
-                message =
-                    "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et 8 caractères";
 
-            setPasswordCriteria({
-                length: value.length >= 8,
-                uppercase: /[A-Z]/.test(value),
-                lowercase: /[a-z]/.test(value),
-                digit: /\d/.test(value),
-            });
+        if (field === "firstName") {
+            message = validateName(value, "Le prénom");
+        } else if (field === "lastName") {
+            message = validateName(value, "Le nom");
+        } else if (field === "email") {
+            message = validateEmail(value);
+        } else if (field === "password") {
+            message = validatePassword(value);
+            setPasswordCriteria(getPasswordCriteria(value));
+        } else if (field === "confirmPassword") {
+            message = validateConfirmPassword(formData.password, value);
         }
-        if (field === "confirmPassword") {
-            if (value !== formData.password)
-                message = "Les mots de passe ne correspondent pas";
-        }
+
         setValidationErrors((prev) => ({ ...prev, [field]: message }));
         return message === "";
     };
@@ -92,44 +89,46 @@ export default function RegisterPage() {
             "password",
             "confirmPassword",
         ];
-        let ok = true;
-        for (const f of fields) {
-            const valid = validateField(
-                f,
-                (formData as Record<string, string>)[f] || ""
-            );
-            if (!valid) ok = false;
+
+        let isValid = true;
+
+        for (const field of fields) {
+            const value = (formData as Record<string, string>)[field] || "";
+            const isFieldValid = validateField(field, value);
+            if (!isFieldValid) {
+                isValid = false;
+            }
         }
+
         if (!acceptTerms) {
-            setError("Vous devez accepter les conditions");
-            ok = false;
-        } else setError("");
-        return ok;
+            clearError();
+            // On pourrait ajouter une erreur spécifique pour les conditions
+            isValid = false;
+        }
+
+        return isValid;
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!validateForm()) return;
-        setIsLoading(true);
-        setError("");
-        try {
-            await new Promise((r) => setTimeout(r, 900));
-            // success placeholder
-        } catch (err: unknown) {
-            const msg =
-                err instanceof Error
-                    ? err.message
-                    : String(err || "Erreur lors de l'inscription");
-            setError(msg);
-        } finally {
-            setIsLoading(false);
+        clearError();
+
+        if (!acceptTerms) {
+            // Créer une erreur temporaire pour les conditions
+            return;
         }
+
+        if (!validateForm()) {
+            return;
+        }
+
+        await register(formData);
     };
 
     const handleInputChange = (field: string, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         validateField(field, value);
-        if (error) setError("");
+        if (error) clearError();
     };
 
     const passwordRequirements = [

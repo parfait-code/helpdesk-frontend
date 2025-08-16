@@ -6,6 +6,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Export auth utilities
+export { AuthService } from './auth-service';
+export { apiClient } from './api-client';
+export type { ApiResponse, ApiError } from './api-client';
+
+// Export hooks
+export { useAuth, useAuthValidation } from './hooks/use-auth';
+
 // Format date functions
 export function formatDate(date: Date | string, format: 'short' | 'long' | 'relative' = 'short'): string {
   const d = new Date(date)

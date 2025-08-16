@@ -12,7 +12,7 @@ import {
     Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useAuth, useAuthValidation } from "@/lib/utils/hooks/use-auth";
 
 const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -21,11 +21,12 @@ const fadeIn = {
 };
 
 export default function LoginPage() {
-    const router = useRouter();
+    const { login, isLoading, error, clearError } = useAuth();
+    const { validateEmail, validatePassword, getPasswordCriteria } =
+        useAuthValidation();
+
     const [isVisible, setIsVisible] = React.useState(false);
-    const [isLoading, setIsLoading] = React.useState(false);
     const [rememberMe, setRememberMe] = React.useState(false);
-    const [error, setError] = React.useState("");
 
     const [formData, setFormData] = React.useState({
         email: "",
@@ -51,30 +52,16 @@ export default function LoginPage() {
     const toggleVisibility = () => setIsVisible(!isVisible);
 
     const validateForm = () => {
+        const emailError = validateEmail(formData.email);
+        const passwordError = validatePassword(formData.password);
+
         const errors = {
-            email: "",
-            password: "",
+            email: emailError,
+            password: passwordError,
         };
 
-        // Email validation
-        if (!formData.email) {
-            errors.email = "L'email est requis";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            errors.email = "Email invalide";
-        }
-
-        // Password validation
-        if (!formData.password) {
-            errors.password = "Le mot de passe est requis";
-        } else if (
-            !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(formData.password)
-        ) {
-            errors.password =
-                "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et 8 caractères";
-        }
-
         setValidationErrors(errors);
-        return !errors.email && !errors.password;
+        return !emailError && !passwordError;
     };
 
     // Validate a single field in real-time
@@ -82,27 +69,13 @@ export default function LoginPage() {
         let message = "";
 
         if (field === "email") {
-            if (!value) {
-                message = "L'email est requis";
-            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-                message = "Email invalide";
-            }
+            message = validateEmail(value);
         }
 
         if (field === "password") {
-            if (!value) {
-                message = "Le mot de passe est requis";
-            } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(value)) {
-                message =
-                    "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et 8 caractères";
-            }
-            // update checklist criteria
-            setPasswordCriteria({
-                length: value.length >= 8,
-                uppercase: /[A-Z]/.test(value),
-                lowercase: /[a-z]/.test(value),
-                digit: /\d/.test(value),
-            });
+            message = validatePassword(value);
+            // Update checklist criteria
+            setPasswordCriteria(getPasswordCriteria(value));
         }
 
         setValidationErrors((prev) => ({ ...prev, [field]: message }));
@@ -111,40 +84,20 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
+        clearError();
 
         if (!validateForm()) {
             return;
         }
 
-        setIsLoading(true);
-
-        try {
-            // Simulation de l'appel API
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            // Simulation de succès - redirection vers le dashboard
-            console.log("Login avec:", formData);
-
-            // Stockage temporaire pour la démo
-            if (rememberMe) {
-                localStorage.setItem("userEmail", formData.email);
-            }
-
-            // Redirection vers le dashboard
-            router.push("/dashboard");
-        } catch {
-            setError("Email ou mot de passe incorrect");
-        } finally {
-            setIsLoading(false);
-        }
+        await login(formData, rememberMe);
     };
 
     const handleInputChange = (field: string, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         // Run per-field validation so errors appear while typing
         validateField(field, value);
-        if (error) setError("");
+        if (error) clearError();
     };
 
     return (

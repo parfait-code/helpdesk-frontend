@@ -27,12 +27,11 @@ import {
   LogOut,
   HelpCircle,
   Ticket,
-  Clock,
   CheckCircle,
-  AlertCircle,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/utils/hooks/use-auth";
 
 const notifications = [
   {
@@ -70,8 +69,19 @@ const notifications = [
 export default function DashboardHeader() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const { currentUser } = useAuth();
   const [searchValue, setSearchValue] = React.useState("");
   const unreadNotifications = notifications.filter((n) => !n.read).length;
+
+  const displayName = React.useMemo(() => {
+    if (!currentUser) return "Utilisateur";
+    // Prefer a full name if available, otherwise fall back to name or email
+    const fullName = [currentUser.firstName, currentUser.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    return fullName || currentUser.name || currentUser.email || "Utilisateur";
+  }, [currentUser]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,11 +247,11 @@ export default function DashboardHeader() {
                 as="button"
                 className="transition-transform"
                 size="sm"
-                name="Jean Dupont"
+                name={displayName}
               />
             </DropdownTrigger>
             <DropdownMenu aria-label="User actions">
-              <DropdownSection title="jean.dupont@entreprise.com">
+              <DropdownSection title={displayName}>
                 <DropdownItem
                   key="profile"
                   startContent={<User className="w-4 h-4" />}
